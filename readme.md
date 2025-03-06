@@ -1,4 +1,4 @@
-# FastAPI with Observability
+# Arshan's Observability with FastAPI
 
 Observe the FastAPI application with three pillars of observability on [Grafana](https://github.com/grafana/grafana):
 
