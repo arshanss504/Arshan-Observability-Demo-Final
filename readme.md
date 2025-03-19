@@ -1,11 +1,11 @@
 # Arshan's Observability with FastAPI for Logs, Metrics and Traces.
 
 Welcome to my project on Observabiltiy.
-This is an one-stop monitoring solution that aims to introduce the concept of Trace IDs in context of Logs and Metrics.   
-In this repository, I have manually instrumented a mock service written in FastApi with Opentelemetry to generate logs, metrics and traces which are then scrapped and configured using tools like loki and tempo and visualized on Grafana. 
-
-This is set up locally in a Docker environment for demo purposes. It can be scaled further for a Kubernetes Cluster having multiple nodes, details of which you can find below.
+This is an all-encompassing monitoring solution that aims to introduce the concept of Trace IDs to Logs and Metrics.   
+In this project, a mock service written in FastApi is manually instrumented with Opentelemetry to generate Logs, Metrics and Traces which are then scrapped and configured using tools like Loki, Prometheus and Tempo and visualized on Grafana. 
 The project consists of a built Grafana Dashboard for visualization.
+
+This project is set up locally in a Docker environment for demo purposes, it can be scaled further for a Kubernetes Cluster having multiple nodes, details of which you can find below. Click here [Kubernetes Observability](#plan-for-setting-this-up-in-sit-server)
 
 # Problem Statement:
 
@@ -15,15 +15,34 @@ The already existing Observabiltiy Infrastructure (Prometheus for Metrics and El
 
 Distributed Tracing and Logging: By introducing Trace ID context to logs and metrics, we can precisly point to the problem or troubleshoot them effortlessly. Traversing of Logs becomes lot easier when you know the exact Trace ID pertaining to all failed requests or say you can visualize the entire journey of a request through multiple services inside a cluster.
 
-#
 # Tech Stack
 
+- Opentelemetry SDKs: Libraries to be imported, generates log, traces and metrics
+- Loki Plugin: Scrapes Logs and labels them
+- Prometheus: Scrapes Metrics
+- Tempo: Scrapes Traces and Correlates them
+- Grafana: For Visualization
 
-This is [Grafana](https://github.com/grafana/grafana):
+NOTE: I have not used Opentelemetry Collector in this Project, check out my other repository [Arshan's Opentelemetry Collector Repo](https://github.com/arshanss504/Arshan-OtelCollector-Observability-Demo.git)
 
-1. Traces with [Tempo](https://github.com/grafana/tempo) and [OpenTelemetry Python SDK](https://github.com/open-telemetry/opentelemetry-python)
-2. Metrics with [Prometheus](https://prometheus.io/) and [Prometheus Python Client](https://github.com/prometheus/client_python)
-3. Logs with [Loki](https://github.com/grafana/loki)
+# Plan for setting this up in SIT Server
+
+We shall be using Automatic Instrumentation for this purpose. Traces and Metrics shall be automatically generated.
+In case of Logs, we have to configure the logger in that service to generate logs with included Otel trace and span IDs using Log formatter.
+
+For this scenario, I am assuming our services are writing logs to stdout i.e. We shall be scraping K8 Pod logs.
+
+Steps:
+
+- Each service is instrumented with required Libraries.
+- Certain set of built-in environemnt variables are set for every service. They are responsible for exporting of logs, traces and metrics
+- OtelCollector is configured to scrape them from every service, it is deployed as a Pod in itself.
+- In OtelCollector, tools like Loki, Prometheus and Tempo are configured.
+- They are added as Data Sources in Grafana and configured appropriately to have proper correlation
+
+I have referred to this resource : https://opentelemetry.io/docs/demo/architecture/
+
+## Local Deployment Starts here
 
 ![Observability Architecture](./images/observability-arch.jpg)
 
@@ -43,7 +62,7 @@ This is [Grafana](https://github.com/grafana/grafana):
       - [OpenTelemetry Instrumentation](#opentelemetry-instrumentation)
     - [Prometheus - Metrics](#prometheus---metrics)
       - [Prometheus Config](#prometheus-config)
-      - [Grafana Data Source](#grafana-data-source)
+      - [Grafana Data Source](#important-grafana-configuration)
     - [Tempo - Traces](#tempo---traces)
       - [Grafana Data Source](#grafana-data-source-1)
     - [Loki - Logs](#loki---logs)
@@ -54,7 +73,7 @@ This is [Grafana](https://github.com/grafana/grafana):
 
 ## Quick Start
 
-1. Install [Loki Docker Driver](https://grafana.com/docs/loki/latest/clients/docker-driver/)
+1. Install Loki Plugin for Docker
 
    ```bash
    docker plugin install grafana/loki-docker-driver:2.9.2 --alias loki --grant-all-permissions
@@ -92,17 +111,17 @@ This is [Grafana](https://github.com/grafana/grafana):
    k6 run --vus 1 --duration 300s k6-script.js
    ```
 
-4. Check predefined dashboard `FastAPI Observability` on Grafana [http://localhost:3000/](http://localhost:3000/) login with `admin:admin`
+4. I have included a pre-defined dashboard `FastAPI Observability` on Grafana [http://localhost:3000/](http://localhost:3000/) login with `admin:admin`. I have also included its JSON
+   
 
    Dashboard screenshot:
 
    ![FastAPI Monitoring Dashboard](./images/dashboard.png)
 
-   The dashboard is also available on [Grafana Dashboards](https://grafana.com/grafana/dashboards/16110).
 
-## Explore with Grafana
+## Important Grafana Configuration
 
-Grafana provides a great solution, which could observe specific actions in service between traces, metrics, and logs through trace ID and exemplar.
+Grafana provides a great solution, which could observe specific actions in service between traces, metrics, and logs through trace ID and exemplar like Trace Buttons.
 
 ![Observability Correlations](./images/observability-correlations.jpeg)
 
@@ -136,7 +155,7 @@ For a more complex scenario, we use three FastAPI applications with the same cod
 
 #### Traces and Logs
 
-We use [OpenTelemetry Python SDK](https://github.com/open-telemetry/opentelemetry-python) to send trace info with gRCP to Tempo. Each request span contains other child spans when using OpenTelemetry instrumentation. The reason is that instrumentation will catch each internal asgi interaction ([opentelemetry-python-contrib issue #831](https://github.com/open-telemetry/opentelemetry-python-contrib/issues/831#issuecomment-1005163018)). If you want to get rid of the internal spans, there is a [workaround](https://github.com/open-telemetry/opentelemetry-python-contrib/issues/831#issuecomment-1116225314) in the same issue #831 by using a new OpenTelemetry middleware with two overridden methods for span processing.
+We use OpenTelemetry Python SDK to send trace info with gRCP to Tempo. Each request span contains other child spans when using OpenTelemetry instrumentation. The reason is that instrumentation will catch each internal asgi interaction. If you want to get rid of the internal spans, there is a [workaround](https://github.com/open-telemetry/opentelemetry-python-contrib/issues/831#issuecomment-1116225314) in the same issue #831 by using a new OpenTelemetry middleware with two overridden methods for span processing.
 
 We use [OpenTelemetry Logging Instrumentation](https://opentelemetry-python-contrib.readthedocs.io/en/latest/instrumentation/logging/logging.html) to override the logger format with another format with trace id and span id.
 
@@ -271,8 +290,8 @@ Metrics with exemplars
 
 There are two methods to add trace information to spans and logs using the OpenTelemetry Python SDK:
 
-1. [Code-based Instrumentation](https://opentelemetry.io/docs/languages/python/instrumentation/): This involves adding trace information to spans, logs, and metrics using the OpenTelemetry Python SDK. It requires more coding effort but allows for the addition of exemplars to metrics. We employ this approach in this project.
-2. [Zero-code Instrumentation](https://opentelemetry.io/docs/zero-code/python/): This method automatically instruments a Python application using instrumentation libraries, but only when the used [frameworks and libraries](https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation#readme) are supported. It simplifies the process by eliminating the need for manual code changes. However, it does not allow for the addition of exemplars to metrics. For more insights into zero-code instrumentation, refer to my other project, [OpenTelemetry APM](https://github.com/blueswen/opentelemetry-apm?tab=readme-ov-file#python---fastapi).
+1. Code-based Instrumentation: This involves adding trace information to spans, logs, and metrics using the OpenTelemetry Python SDK. It requires more coding effort but allows for the addition of exemplars to metrics. We employ this approach in this project.
+2. Zero-code Instrumentation: This method automatically instruments a Python application using instrumentation libraries, but only when the used frameworks and libraries are supported. It simplifies the process by eliminating the need for manual code changes. However, it does not allow for the addition of exemplars to metrics. For more insights into zero-code instrumentation, refer to my other project, [OpenTelemetry Collector](https://github.com/arshanss504/Arshan-OtelCollector-Observability-Demo.git).
 
 ### Prometheus - Metrics
 
@@ -461,5 +480,4 @@ grafana:
 6. [Don’t Repeat Yourself with Anchors, Aliases and Extensions in Docker Compose Files](https://medium.com/@kinghuang/docker-compose-anchors-aliases-extensions-a1e4105d70bd)
 7. [How can I escape a $ dollar sign in a docker compose file?](https://stackoverflow.com/a/40621373)
 8. [Tempo Trace to logs tags discussion](https://community.grafana.com/t/need-to-customize-tempo-option-for-trace-logs-with-loki/59612)
-9. [Starlette Prometheus](https://github.com/perdy/starlette-prometheus)
 10. [Tempo Example](https://github.com/grafana/tempo/tree/main/example/docker-compose/local)
