@@ -1,6 +1,25 @@
-# Arshan's Observability with FastAPI
+# Arshan's Observability with FastAPI for Logs, Metrics and Traces.
 
-Observe the FastAPI application with three pillars of observability on [Grafana](https://github.com/grafana/grafana):
+Welcome to my project on Observabiltiy.
+This is an one-stop monitoring solution that aims to introduce the concept of Trace IDs in context of Logs and Metrics.   
+In this repository, I have manually instrumented a mock service written in FastApi with Opentelemetry to generate logs, metrics and traces which are then scrapped and configured using tools like loki and tempo and visualized on Grafana. 
+
+This is set up locally in a Docker environment for demo purposes. It can be scaled further for a Kubernetes Cluster having multiple nodes, details of which you can find below.
+The project consists of a built Grafana Dashboard for visualization.
+
+# Problem Statement:
+
+The already existing Observabiltiy Infrastructure (Prometheus for Metrics and Elastic for Logs) is highly decentralized and fails to deliver precision that hinders scope of monitoring multiple services. Troubleshooting of problems is difficult as devs have to scan through a behemoth of log files which consumes lot of time and energy. We cannot track the requests that are failed or find logs pertaining to it.
+
+# Solution:
+
+Distributed Tracing and Logging: By introducing Trace ID context to logs and metrics, we can precisly point to the problem or troubleshoot them effortlessly. Traversing of Logs becomes lot easier when you know the exact Trace ID pertaining to all failed requests or say you can visualize the entire journey of a request through multiple services inside a cluster.
+
+#
+# Tech Stack
+
+
+This is [Grafana](https://github.com/grafana/grafana):
 
 1. Traces with [Tempo](https://github.com/grafana/tempo) and [OpenTelemetry Python SDK](https://github.com/open-telemetry/opentelemetry-python)
 2. Metrics with [Prometheus](https://prometheus.io/) and [Prometheus Python Client](https://github.com/prometheus/client_python)
