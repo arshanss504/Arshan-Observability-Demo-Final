@@ -1,4 +1,4 @@
-# Arshan's Observability with FastAPI for Logs, Metrics and Traces.
+# Observability Stack with FastAPI for Logs, Metrics and Traces by Arshan
 
 Welcome to my project on Observabiltiy.
 This is an all-encompassing monitoring solution that aims to introduce the concept of Trace IDs to Logs and Metrics.   
